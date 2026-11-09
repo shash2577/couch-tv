@@ -41,6 +41,8 @@
   // Home settings made on this TV with the gear tile (see "home settings" below). They win over
   // config.js. ST is the saved object; the rest are read from it in readConfig().
   var ST = {}, WX_SHOW = true, WX_F = false, WX_EVERY = 30, HIDDEN_TV = [];
+  // India's AQI next to the weather (home.aqi) and one rotating headline from home.news_feed
+  var AQI_ON = false, NEWS_FEED = "", NEWS_MS = 12000, news = [], newsI = 0;
   // Now playing (#31), on unless switched off; the navigation sound: system, soft or off (#32)
   var NP_ON = true, SOUND_STYLE = "system";
   // glass app icons: the focused app in its own colours, or staying glass (#32)
@@ -227,6 +229,8 @@
     // a link set in Home settings wins over home.video_url; one from config.json alone means on
     VIDEO_URL = typeof ST.video_url === "string" ? ST.video_url : typeof HOME.video_url === "string" ? HOME.video_url : "";
     VIDEO_ON = !!VIDEO_URL && (typeof ST.video === "boolean" ? ST.video : true);
+    AQI_ON = HOME.aqi === true && !!window.AQI;
+    NEWS_FEED = typeof HOME.news_feed === "string" && /^https:\/\//.test(HOME.news_feed) ? HOME.news_feed : "";
     GRID_COLS = NIGHT ? 12 : 8;
     DOCK_APPS = Math.max(1, Math.min(10, parseInt(HOME.dock_size, 10) || 10));
     if (smartOn()) DOCK_APPS = Math.min(DOCK_APPS, 9);   // the Smart home tile takes one place in the dock
@@ -398,8 +402,17 @@
     var day = d.toLocaleDateString(loc, { weekday: "long", day: "numeric", month: "long" }).replace(",", "");
     day = day.charAt(0).toUpperCase() + day.slice(1);   // "lunes 27 de octubre" starts a line on screen
     var w = NIGHT && WX_SHOW && data.weather && data.weather.temp != null ? data.weather : null;
-    $("date").innerHTML = '<span class="dline">' + esc(day) + (w ? '<span class="wx">' + wxIcon(w) + esc(tempText(w.temp)) +
-      '<span class="ww"> ' + esc(wxText(w)) + "</span></span>" : "") + "</span>";
+    var a = NIGHT && AQI_ON && data.aqi ? data.aqi : null;
+    var sep = '<span class="sep">·</span>';
+    $("date").innerHTML = '<span class="dline">' + esc(day) + "</span>";
+    // Night look: one calm line under the greeting, top left: the day, the weather's place, the
+    // weather, then India's AQI with its colour dot. (The centred date is hidden there, app.css.)
+    $("meta").innerHTML = !NIGHT ? "" : esc(day) +
+      (w && WXCFG.place ? sep + esc(WXCFG.place) : "") +
+      (w ? sep + '<span class="wx">' + wxIcon(w) + esc(tempText(w.temp)) + " " + esc(wxText(w)) + "</span>" : "") +
+      (a ? sep + '<span class="aqi"><i class="adot aqi-' + a.category + '"></i>' + esc(t("aqi")) + " " + a.index + " " +
+        esc(t("aqi_" + a.category)) + "</span>" : "");
+    renderHello(h);
     fitDate();
     document.body.classList.toggle("night", h >= 21 || h < 6);
     if (NIGHT) glassClock(hm);
@@ -649,7 +662,7 @@
     var b = line.getBoundingClientRect(), rem = innerWidth / 120;
     var near = function (r) { return r && r.width > 0 && r.bottom > b.top && r.top < b.bottom; };
     var q = $("quick").classList.contains("none") ? null : $("qbtns").getBoundingClientRect();
-    var p = $("people").getBoundingClientRect();
+    var p = $("who-row").getBoundingClientRect();   // the people switch and the greeting next to it
     var hitQ = near(q) && b.right > q.left - rem, hitP = near(p) && b.left < p.right + rem;
     if (!hitQ && !hitP) return;
     if (hitQ) d.style.right = (innerWidth - q.left + 1.5 * rem) + "px";
@@ -674,6 +687,47 @@
     51: "wx_drizzle", 53: "wx_drizzle", 55: "wx_drizzle", 56: "wx_drizzle", 57: "wx_drizzle", 61: "wx_light_rain",
     63: "wx_rain", 65: "wx_heavy_rain", 66: "wx_rain", 67: "wx_rain", 80: "wx_showers", 81: "wx_showers",
     82: "wx_heavy_showers", 95: "wx_storms", 96: "wx_storms", 99: "wx_storms" };
+  // India's AQI for the weather's place (aqi.js), straight from Open-Meteo's air quality model
+  function refreshAqi() {
+    if (!NIGHT || !AQI_ON) return Promise.resolve();
+    return fetch(window.AQI.url(WXCFG.lat, WXCFG.lon)).then(function (r) { return r.json(); })
+      .then(function (j) { data.aqi = window.AQI.fromHourly(j.hourly); clock(); }, function () {});
+  }
+
+  // The headlines from home.news_feed (RSS or Atom). News sites send no CORS headers, so the app
+  // fetches the feed (MainActivity, tvos.invalid/news); a failed fetch keeps the last headlines.
+  function refreshNews() {
+    if (!NIGHT || !NEWS_FEED) return Promise.resolve();
+    return fetch("http://tvos.invalid/news?u=" + encodeURIComponent(NEWS_FEED)).then(function (r) { return r.text(); })
+      .then(function (xml) {
+        var doc = new DOMParser().parseFromString(xml, "text/xml");
+        var got = Array.prototype.map.call(doc.querySelectorAll("item > title, entry > title"), function (n) {
+          return (n.textContent || "").replace(/\s+/g, " ").trim();
+        }).filter(Boolean).slice(0, 10);
+        if (got.length) { news = got; newsI = 0; renderNews(); }
+      }, function () {});
+  }
+  // Google News titles end in " - <source>": the source goes in front, small, like a label
+  function renderNews() {
+    var el = $("news"), item = news.length ? news[newsI % news.length] : "";
+    var cut = item.lastIndexOf(" - "), src = cut > 0 ? item.slice(cut + 3) : "", head = cut > 0 ? item.slice(0, cut) : item;
+    el.classList.toggle("on", !!item);
+    el.innerHTML = item ? (src ? '<span class="nsrc">' + esc(src) + "</span>" : "") + '<span class="nhead">' + esc(head) + "</span>" : "";
+  }
+  // the next headline fades in where the last one faded out
+  function nextHeadline() {
+    if (news.length < 2) return;
+    $("news").classList.add("out");
+    setTimeout(function () { newsI++; renderNews(); $("news").classList.remove("out"); }, 450);
+  }
+
+  // "Good evening, Shashank": the person whose Keep watching is showing, by the time of day
+  function renderHello(h) {
+    var p = PEOPLE.length ? PEOPLE[whoIndex()] : null, name = p && p.name ? p.name.trim() : "";
+    var greet = t(h < 5 ? "hello_evening" : h < 12 ? "hello_morning" : h < 17 ? "hello_afternoon" : "hello_evening");
+    $("hello").textContent = name ? greet + ", " + name : greet;
+  }
+
   function weatherDirect() {
     var url = "https://api.open-meteo.com/v1/forecast?latitude=" + WXCFG.lat + "&longitude=" + WXCFG.lon +
       "&current=temperature_2m,weather_code,is_day&timezone=" + encodeURIComponent(WXCFG.timezone || "auto") + "&forecast_days=1";
@@ -1041,6 +1095,7 @@
     who = id; s = 0;
     try { localStorage.setItem("tvhome.who", who); } catch (e) {}
     if (!NOBODY) api("POST", "/api/who", { who: who }).catch(function () {});
+    renderHello(new Date().getHours());
     renderShelf();
   }
   // The order of the names: kept by the bridge (the phone's People sheet uses the same list), or on
@@ -1991,7 +2046,9 @@
     saveSettings();
     SET.msg = t("loc_set", { place: p.name });
     data.weather = null;
+    data.aqi = null;
     refreshWeather();
+    refreshAqi();
   }
 
   // ---- weather ----
@@ -2967,6 +3024,11 @@
       if (document.fonts) document.fonts.load("300 10px Antonio").then(function () { glassShown = ""; clock(); });
       refreshWeather();
       setInterval(refreshWeather, WX_EVERY * 60000);
+      refreshAqi();
+      setInterval(refreshAqi, 60 * 60000);   // the model's readings are hourly
+      refreshNews();
+      setInterval(refreshNews, 30 * 60000);
+      setInterval(nextHeadline, NEWS_MS);
     }
     photo = photoForHour(new Date().getHours());
     showPhoto();

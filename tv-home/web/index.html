@@ -18,10 +18,15 @@
 
 <header class="top">
   <div class="top-left">
-    <div class="people-wrap">
-      <div class="people" id="people"></div>
-      <!-- three or more people: the list the head icon opens -->
-      <div class="people-pop" id="people-pop" role="listbox" aria-label="Who is watching"></div>
+    <div class="who-row" id="who-row">
+      <div class="people-wrap">
+        <div class="people" id="people"></div>
+        <!-- three or more people: the list the head icon opens -->
+        <div class="people-pop" id="people-pop" role="listbox" aria-label="Who is watching"></div>
+      </div>
+      <!-- "Good evening, Shashank" for the person picked, and under it (Night look) the day, place,
+           weather and AQI, drawn by app.js -->
+      <div class="hello"><div class="hl" id="hello"></div><div class="hm" id="meta"></div></div>
     </div>
     <div class="hero" id="hero" aria-live="polite">
       <h1 id="hero-title"></h1>
@@ -48,6 +53,8 @@
   <section class="shelf" id="shelf-section" aria-labelledby="shelf-title">
     <header class="shelf-head">
       <h2 id="shelf-title">Keep watching</h2>
+      <!-- one headline at a time from home.news_feed, drawn by app.js -->
+      <p class="news" id="news"></p>
       <p class="status" id="status"></p>
     </header>
     <!-- Night look: Now playing (#31) moves into this slot, the first card of the row -->
@@ -94,6 +101,7 @@
 <script src="config.js"></script>
 <script src="smarthome.js"></script>
 <script src="clearicon.js"></script>
+<script src="aqi.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

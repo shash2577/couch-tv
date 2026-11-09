@@ -80,6 +80,20 @@
     am: "am",
     pm: "pm",
 
+    // ---- the greeting top left, by the time of day; other languages fall back to these ----
+    hello_morning: "Good morning",
+    hello_afternoon: "Good afternoon",
+    hello_evening: "Good evening",
+
+    // ---- India's AQI (aqi.js, home.aqi); other languages fall back to these ----
+    aqi: "AQI",
+    aqi_good: "Good",
+    aqi_satisfactory: "Satisfactory",
+    aqi_moderate: "Moderate",
+    aqi_poor: "Poor",
+    aqi_very_poor: "Very poor",
+    aqi_severe: "Severe",
+
     // ---- weather words (Open-Meteo's WMO codes) ----
     wx_clear: "Clear",
     wx_mostly_clear: "Mostly clear",

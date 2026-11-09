@@ -291,6 +291,40 @@ html.still .tile.focus .face, html.still .tile.focus .face::after { animation: n
 .theme-night .date { white-space: nowrap; }
 /* fitDate() in app.js: not enough room between the people switch and the quick buttons */
 .theme-night .date.tight .ww, .theme-night .date.tighter .wx { display: none; }
+/* Night look: the day, place, weather and AQI sit under the greeting, top left, so the centred date
+   line is not drawn (it ran under the quick buttons with all four on it). The AQI has a small dot
+   in CPCB's colour for its band (aqi.js). */
+.theme-night .date { display: none; }
+.hm { font-size: 1.5rem; line-height: 2rem; font-weight: 400; color: rgba(255, 255, 255, 0.86); white-space: nowrap;
+  text-shadow: 0 0.125rem 0.75rem rgba(0, 0, 0, 0.55); }
+.hm:empty { display: none; }
+.hm .sep { margin: 0 0.625rem; opacity: 0.55; }
+.hm .wx svg { width: 1.5rem; height: 1.5rem; margin-right: 0.375rem; vertical-align: -0.25rem;
+  fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.hm .adot { display: inline-block; width: 0.625rem; height: 0.625rem; margin-right: 0.5rem; border-radius: 50%;
+  vertical-align: 0.125rem; box-shadow: 0 0 0 0.125rem rgba(255, 255, 255, 0.3); }
+.adot.aqi-good { background: #3fb950; }
+.adot.aqi-satisfactory { background: #a3d65b; }
+.adot.aqi-moderate { background: #f2d13a; }
+.adot.aqi-poor { background: #f59b30; }
+.adot.aqi-very_poor { background: #e5484d; }
+.adot.aqi-severe { background: #a11d33; }
+
+/* "Good evening, Shashank" beside the people switch, the day's line under it */
+.who-row { display: flex; align-items: center; gap: 1.25rem; }
+.hello { display: flex; flex-direction: column; gap: 0.25rem; }
+.hl { font-size: 2.125rem; line-height: 2.625rem; font-weight: 600; color: #fff; letter-spacing: -0.01em;
+  text-shadow: 0 0.125rem 1.125rem rgba(0, 0, 0, 0.4); white-space: nowrap; }
+
+/* One headline on the right of the Keep watching heading: the source as a small label, then the
+   headline; each one fades into the next (app.js, home.news_feed) */
+.shelf-head .news { display: none; margin-left: auto; padding-right: var(--safe-x); max-width: 58vw; min-width: 0;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 1.375rem; line-height: 2.25rem;
+  color: rgba(255, 255, 255, 0.82); text-shadow: 0 0.125rem 1rem rgba(0, 0, 0, 0.5); transition: opacity 450ms ease; }
+.shelf-head .news.on { display: block; }
+.shelf-head .news.out { opacity: 0; }
+.shelf-head .news .nsrc { margin-right: 0.75rem; font-size: 1.0625rem; font-weight: 700; letter-spacing: 0.08em;
+  text-transform: uppercase; color: rgba(255, 255, 255, 0.6); }
 /* the date sits just above each scene's clock; it fades out while the scenes swap */
 .theme-night .date.swap { opacity: 0; }
 .scene-night .date { color: rgba(255, 232, 238, 0.92); }

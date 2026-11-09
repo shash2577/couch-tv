@@ -319,7 +319,10 @@ class MainActivity : Activity() {
                 if (req.isForMainFrame && res.statusCode >= 500) pageFailed()
             }
 
-            override fun shouldOverrideUrlLoading(view: WebView, req: WebResourceRequest) = true
+            // The page may only reload itself (app.js restart(), after a Home settings or look change);
+            // blocking that too left the old look on screen. Every other address stays blocked.
+            override fun shouldOverrideUrlLoading(view: WebView, req: WebResourceRequest) =
+                req.url.host == null || req.url.host != Uri.parse(view.url ?: "").host
 
             override fun shouldInterceptRequest(view: WebView, req: WebResourceRequest): WebResourceResponse? {
                 val u = req.url
@@ -336,6 +339,14 @@ class MainActivity : Activity() {
                     val b = watchNextArt(u.lastPathSegment ?: "") ?: return null
                     return WebResourceResponse("image/jpeg", null, ByteArrayInputStream(b)).apply {
                         responseHeaders = mapOf("Cache-Control" to "max-age=86400")
+                    }
+                }
+                if (u.pathSegments.firstOrNull() == "news") {
+                    // home.news_feed: news sites send no CORS headers, so the feed is fetched here for the page
+                    val feed = u.getQueryParameter("u")?.takeIf { it.startsWith("https://") } ?: return null
+                    val text = runCatching { fetchText(feed) }.getOrNull() ?: return null
+                    return WebResourceResponse("text/xml", "utf-8", ByteArrayInputStream(text.toByteArray())).apply {
+                        responseHeaders = mapOf("Cache-Control" to "no-store", "Access-Control-Allow-Origin" to "*")
                     }
                 }
                 val pkg = u.lastPathSegment ?: return null

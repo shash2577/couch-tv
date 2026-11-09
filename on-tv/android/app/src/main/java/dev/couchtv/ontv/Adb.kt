@@ -44,6 +44,8 @@ import java.util.concurrent.atomic.AtomicInteger
  */
 object Adb {
     private const val TAG = "couchtv.adb"
+    private const val LOW_RAM_BYTES = 3L * 1024 * 1024 * 1024
+    private const val LOW_RAM_CACHED = 16
     private lateinit var ctx: Context
     private val io = Executors.newCachedThreadPool()
     private val lock = Any()
@@ -249,6 +251,9 @@ object Adb {
             runCatching { shell("appops set ${BuildConfig.APPLICATION_ID} GET_USAGE_STATS allow", 8000) }
             if (Build.VERSION.SDK_INT >= 30) runCatching { shell("pm grant ${BuildConfig.APPLICATION_ID} android.permission.WRITE_SECURE_SETTINGS", 8000) }
             runCatching { shell("pm grant ${BuildConfig.APPLICATION_ID} " + if (Build.VERSION.SDK_INT >= 29) "android.permission.READ_TV_LISTINGS" else "com.android.providers.tv.permission.READ_EPG_DATA", 8000) }
+            // 2 GB TVs: fewer apps kept in memory, so the one on screen is not starved. Android forgets
+            // device_config at every reboot, which is why it is set again on each connect.
+            if (lowRam()) runCatching { shell("device_config put activity_manager max_cached_processes $LOW_RAM_CACHED", 8000) }
             FireHome.poke()
         }
         return true
@@ -266,6 +271,12 @@ object Adb {
             }
             true
         } catch (e: Exception) { Log.w(TAG, "self enable", e); false }
+    }
+
+    private fun lowRam(): Boolean {
+        val mi = android.app.ActivityManager.MemoryInfo()
+        (ctx.getSystemService(Context.ACTIVITY_SERVICE) as android.app.ActivityManager).getMemoryInfo(mi)
+        return mi.totalMem in 1 until LOW_RAM_BYTES
     }
 
     private fun canWriteSecure() = ctx.checkSelfPermission("android.permission.WRITE_SECURE_SETTINGS") == PackageManager.PERMISSION_GRANTED

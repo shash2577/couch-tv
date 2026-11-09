@@ -285,6 +285,13 @@ def _home(h):
     vid = h.get("video_url")
     if isinstance(vid, str) and re.match(r"https?://", vid) and len(vid) <= 2000:
         out["video_url"] = vid
+    # India's AQI next to the weather (tv-home/web/aqi.js), and one rotating headline from an RSS or
+    # Atom feed under the date. Both off unless config.json gives them.
+    if isinstance(h.get("aqi"), bool):
+        out["aqi"] = h["aqi"]
+    feed = h.get("news_feed")
+    if isinstance(feed, str) and re.match(r"https://", feed) and len(feed) <= 2000:
+        out["news_feed"] = feed
     return out
 
 

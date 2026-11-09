@@ -48,6 +48,9 @@ class FireWatch : AccessibilityService() {
         connected = true
         homeClasses = homeActivitiesOf(this)
         Log.i("couchtv.firewatch", "the Home button watch is connected")
+        // OnePlus TVs strip third-party boot receivers, so the on-TV app (option C's phone remote)
+        // never starts after a restart. Android still binds this watch at boot: wake that app here.
+        runCatching { sendBroadcast(Intent().setClassName(ONTV_PKG, "$ONTV_PKG.BootReceiver")) }
         // The TV's own home can come up before this service is bound, and then its window event is
         // never seen (issue #44: Amazon's home sat on screen about 30 s at boot). The service has no
         // permission to read windows (that would be reading the screen), so it goes by the clock
@@ -132,7 +135,9 @@ class FireWatch : AccessibilityService() {
         const val AMAZON_HOME = "com.amazon.tv.launcher"
         const val GOOGLE_TV_HOME = "com.google.android.apps.tv.launcherx"
         const val ANDROID_TV_HOME = "com.google.android.tvlauncher"
-        private val STOCK_HOMES = listOf(AMAZON_HOME, GOOGLE_TV_HOME, ANDROID_TV_HOME)
+        const val ONEPLUS_HOME = "com.oneplus.tv.launcher"
+        private const val ONTV_PKG = "dev.couchtv.ontv"
+        private val STOCK_HOMES = listOf(AMAZON_HOME, GOOGLE_TV_HOME, ANDROID_TV_HOME, ONEPLUS_HOME)
 
         /** The activities of the Google homes that the TV itself lists as a HOME screen (read when the service binds). */
         @Volatile var homeClasses: Set<String> = emptySet()
@@ -158,6 +163,8 @@ class FireWatch : AccessibilityService() {
             AMAZON_HOME -> cls?.contains("Settings") != true
             GOOGLE_TV_HOME -> cls == "$GOOGLE_TV_HOME.home.HomeActivity" || cls == "$GOOGLE_TV_HOME.home.VanillaModeHomeActivity" || (cls != null && cls in homes)
             ANDROID_TV_HOME -> cls == "$ANDROID_TV_HOME.MainActivity" || (cls != null && cls in homes)
+            // OnePlus TVs: the remote's OnePlus key opens this launcher, not the Android TV home.
+            ONEPLUS_HOME -> cls == "$ONEPLUS_HOME.LauncherPage"
             else -> false
         }
 
