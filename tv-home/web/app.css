@@ -310,7 +310,7 @@ html.still .tile.focus .face, html.still .tile.focus .face::after { animation: n
 .adot.aqi-very_poor { background: #e5484d; }
 .adot.aqi-severe { background: #a11d33; }
 
-/* "Good evening, Shashank" beside the people switch, the day's line under it */
+/* "Good evening, Asha" beside the people switch, the day's line under it */
 .who-row { display: flex; align-items: center; gap: 1.25rem; }
 .hello { display: flex; flex-direction: column; gap: 0.25rem; }
 .hl { font-size: 2.125rem; line-height: 2.625rem; font-weight: 600; color: #fff; letter-spacing: -0.01em;

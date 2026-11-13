@@ -721,7 +721,7 @@
     setTimeout(function () { newsI++; renderNews(); $("news").classList.remove("out"); }, 450);
   }
 
-  // "Good evening, Shashank": the person whose Keep watching is showing, by the time of day
+  // "Good evening, Asha": the person whose Keep watching is showing, by the time of day
   function renderHello(h) {
     var p = PEOPLE.length ? PEOPLE[whoIndex()] : null, name = p && p.name ? p.name.trim() : "";
     var greet = t(h < 5 ? "hello_evening" : h < 12 ? "hello_morning" : h < 17 ? "hello_afternoon" : "hello_evening");
